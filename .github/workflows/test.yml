@@ -2,7 +2,7 @@ name: 自动测速
 
 on:
   schedule:
-    - cron: '0 16 * * *'
+    - cron: '0 16,22,4,10 * * *'
   workflow_dispatch:
 
 permissions:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: 拉取仓库代码
         uses: actions/checkout@v4
 
       - name: 下载 CloudFlare IP 列表
@@ -30,7 +30,7 @@ jobs:
         run: |
           set -e
           ./CloudflareST -cfcolo HKG -sl 5 -n 800 -dn 5 -o HKG.csv
-          ./CloudflareST -cfcolo HKG -sl 5 -n 800 -dn 5 -o KHH.csv
+          ./CloudflareST -cfcolo HKG -sl 5 -n 800 -dn 3 -o KHH.csv
           ./CloudflareST -cfcolo NRT -sl 5 -n 800 -dn 3 -o NRT.csv
           ./CloudflareST -cfcolo LAX -sl 5 -n 800 -dn 3 -o LAX.csv
           ./CloudflareST -cfcolo SEA -sl 5 -n 800 -dn 3 -o SEA.csv
@@ -38,7 +38,7 @@ jobs:
           rm -f ip.txt
           python csv_to_txt.py
 
-      - name: Commit and push changes
+      - name: 提交并推送更改
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

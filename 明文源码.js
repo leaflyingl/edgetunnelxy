@@ -5,7 +5,14 @@ let 订阅路径 = "sub";
 let 我的UUID = "550e8400-e29b-41d4-a716-446655440000";
 let 默认节点名称 = "节点";
 
-let 优选TXT = [];
+let 优选TXT = [
+  "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/HKG.txt",
+  "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/KHH.txt",
+  "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/NRT.txt",
+  "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/LAX.txt",
+  "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/SEA.txt",
+  "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/SJC.txt",
+];
 let 优选列表 = [];
 
 let 反代IP = "ts.hpc.tw:443";
@@ -18,28 +25,18 @@ let 伪装网页 = "";
 // 网页入口
 export default {
   async fetch(访问请求, env) {
-    订阅路径 = env.SUB_PATH || 订阅路径;
-    我的UUID = env.SUB_UUID || 我的UUID;
-    默认节点名称 = env.SUB_NAME || 默认节点名称;
+    订阅路径 = env.SUB_PATH ?? 订阅路径;
+    我的UUID = env.SUB_UUID ?? 我的UUID;
+    默认节点名称 = env.SUB_NAME ?? 默认节点名称;
     优选TXT = env.TXT_URL ? 字符串转数组(env.TXT_URL) : 优选TXT;
-    反代IP = env.PROXY_IP || 反代IP;
-    SOCKS5账号 = env.SOCKS5 || SOCKS5账号;
-    启用SOCKS5全局反代 =
-      env.SOCKS5_GLOBAL = "true"
-        ? true
-        : env.SOCKS5_GLOBAL = "false"
-        ? false
-        : 启用SOCKS5全局反代;
-    伪装网页 = env.FAKE_WEB || 伪装网页;
+    反代IP = env.PROXY_IP ?? 反代IP;
+    SOCKS5账号 = env.SOCKS5 ?? SOCKS5账号;
+    启用SOCKS5全局反代 = env.SOCKS5_GLOBAL === "true";
+    伪装网页 = env.FAKE_WEB ?? 伪装网页;
 
     const 读取我的请求标头 = 访问请求.headers.get("Upgrade");
     const url = new URL(访问请求.url);
-    if (伪装网页 && url.pathname === "/") {
-      url.hostname = 伪装网页;
-      url.protocol = 'https:';
-      访问请求 = new Request(url, 访问请求);
-      return fetch(访问请求);
-    } else if (!读取我的请求标头 || 读取我的请求标头 !== "websocket") {
+    if (!读取我的请求标头 || 读取我的请求标头 !== "websocket") {
       if (优选TXT.length > 0) {
         优选列表 = [...new Set(
           (await Promise.all(
@@ -57,7 +54,8 @@ export default {
       }
 
       const 最终订阅路径 = encodeURIComponent(订阅路径);
-      if (url.pathname === `/${最终订阅路径}`) {
+      switch (url.pathname) {
+        case `/${最终订阅路径}`:
         const 用户代理 = 访问请求.headers.get("User-Agent").toLowerCase();
         const 配置生成器 = {
           v2ray: v2ray配置文件,
@@ -72,8 +70,15 @@ export default {
           status: 200,
           headers: { "Content-Type": "text/plain;charset=utf-8" },
         });
-      } else {
-        return 生成项目介绍页面();
+        default:
+          if (伪装网页) {
+            url.hostname = 伪装网页;
+            url.protocol = 'https:';
+            访问请求 = new Request(url, 访问请求);
+            return fetch(访问请求);
+          } else {
+            return 生成项目介绍页面();
+          }
       }
     } else if (读取我的请求标头 === "websocket") {
       return await 升级WS请求(访问请求);
@@ -400,7 +405,7 @@ body {
 <pre>
 <strong>edge-tunnel</strong>
 
-这是一种基于CF Worker的免费代理方案
+这是一种基于CF Pages的免费代理方案
 <a href="https://github.com/ImLTHQ/edge-tunnel" target="_blank">点我跳转仓库</a>
 </pre>
     `,
@@ -411,32 +416,31 @@ body {
   );
 }
 
-function v2ray配置文件(hostName) {
+function 处理优选列表(优选列表, hostName) {
   if (优选列表.length === 0) {
-    优选列表 = [`${hostName}:443`];
+    优选列表 = [`${hostName}`];
   }
-  return 优选列表
-    .map((获取优选) => {
-      const [地址端口, 节点名字 = 默认节点名称] = 获取优选.split("#");
-      const 拆分地址端口 = 地址端口.split(":");
-      const 端口 = 拆分地址端口.length > 1 ? Number(拆分地址端口.pop()) : 443;
-      const 地址 = 拆分地址端口.join(":");
+  return 优选列表.map((获取优选, index) => {
+    const [地址端口, 节点名字 = `${默认节点名称} ${index + 1}`] = 获取优选.split("#");
+    const 拆分地址端口 = 地址端口.split(":");
+    const 端口 = 拆分地址端口.length > 1 ? Number(拆分地址端口.pop()) : 443;
+    const 地址 = 拆分地址端口.join(":").replace(/^\[(.+)\]$/, "$1");
+    return { 地址, 端口, 节点名字 };
+  });
+}
+
+function v2ray配置文件(hostName) {
+  const 节点列表 = 处理优选列表(优选列表, hostName);
+  return 节点列表.map(({ 地址, 端口, 节点名字 }) => {
       return `vless://${我的UUID}@${地址}:${端口}?encryption=none&security=tls&sni=${hostName}&fp=chrome&type=ws&host=${hostName}&path=%2F%3Fed%3D2560#${节点名字}`;
     })
     .join("\n");
 }
 
 function clash配置文件(hostName) {
-  if (优选列表.length === 0) {
-    优选列表 = [`${hostName}:443`];
-  }
-  const 生成节点 = (优选列表) => {
-    return 优选列表.map((获取优选, index) => {
-      const [地址端口, 节点名字 = `${默认节点名称} ${index + 1}`] =
-        获取优选.split("#");
-      const 拆分地址端口 = 地址端口.split(":");
-      const 端口 = 拆分地址端口.length > 1 ? Number(拆分地址端口.pop()) : 443;
-      const 地址 = 拆分地址端口.join(":").replace(/^\[(.+)\]$/, "$1");
+  const 节点列表 = 处理优选列表(优选列表, hostName);
+  const 生成节点 = (节点列表) => {
+    return 节点列表.map(({ 地址, 端口, 节点名字 }) => {
       return {
         nodeConfig: `- name: ${节点名字}
   type: vless
@@ -455,18 +459,16 @@ function clash配置文件(hostName) {
       };
     });
   };
-  const 节点配置 = 生成节点(优选列表)
+
+  const 节点配置 = 生成节点(节点列表)
     .map((node) => node.nodeConfig)
     .join("\n");
-  const 代理配置 = 生成节点(优选列表)
+  const 代理配置 = 生成节点(节点列表)
     .map((node) => node.proxyConfig)
     .join("\n");
+
   return `
 dns:
-  enable: true
-  listen: 0.0.0.0:53
-  enhanced-mode: redir-host
-  fake-ip-range: 198.18.0.1/16
   use-hosts: true
   nameserver:
     - 1.1.1.1  # Cloudflare
