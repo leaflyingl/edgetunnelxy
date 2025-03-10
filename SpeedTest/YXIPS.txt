@@ -1,1 +1,13 @@
-
+pages.dev#优选域名 1
+ pages.cloudflare.com#优选域名 2
+ workers.cloudflare.com#优选域名 3
+ ns.cloudflare.com#CF家的【推荐】
+ support.cloudflarewarp.com#CF家的【推荐1-1-1-1】
+ portal.cloudflarepartners.com#CF家的【推荐】
+ fbi.gov#优选域名 4
+ www.wto.org#优选域名 5
+ bootstrapcdn.com#优选域名UHE
+ cdnjs.com#【推荐】优选域名
+ www.epicgames.com#大厂优选域名
+ www.visa.com.sg#大厂优选域名
+ icook.tw#大厂优选域名
