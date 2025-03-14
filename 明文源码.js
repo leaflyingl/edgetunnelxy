@@ -8,10 +8,9 @@ let 默认节点名称 = "节点";
 let 优选TXT = [
   "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/HKG.txt",
   "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/KHH.txt",
+  "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/SIN.txt",
   "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/NRT.txt",
-  "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/LAX.txt",
   "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/SEA.txt",
-  "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/SJC.txt",
   "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/LHR.txt",
 ];
 let 优选列表 = [];
@@ -58,11 +57,6 @@ export default {
         ];
       }
 
-      const { SOCKS5有效, 反代IP有效 } = 测试SOCKS5和反代IP();
-      if (!SOCKS5有效 && !反代IP有效) {
-        优选列表.unshift("127.0.0.1#Socks5或反代IP出错，无法访问CF CDN");
-      }
-
       const 最终订阅路径 = encodeURIComponent(订阅路径);
       switch (url.pathname) {
         case `/${最终订阅路径}`:
@@ -70,14 +64,13 @@ export default {
           const 配置生成器 = {
             v2ray: v2ray配置文件,
             clash: clash配置文件,
-            default: 提示界面,
+            "sing-box": singbox配置文件,
+            default: 生成提示界面,
+            //default: 生成提示界面,
           };
           const 工具 = Object.keys(配置生成器).find((工具) => 用户代理.includes(工具));
           const 生成配置 = 配置生成器[工具 || "default"];
-          return new Response(生成配置(访问请求.headers.get("Host")), {
-            status: 200,
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-          });
+          return 生成配置(访问请求.headers.get("Host"));
         default:
           if (伪装网页) {
             url.hostname = 伪装网页;
@@ -321,65 +314,44 @@ function 字符串转数组(str) {
   return str.split("\n");
 }
 
-function 测试SOCKS5和反代IP() {
-  let SOCKS5有效 = true;
-  let 反代IP有效 = true;
-
-  if (SOCKS5账号) {
-    try {
-      const { 地址, 端口 } = 获取SOCKS5账号(SOCKS5账号);
-      const 测试连接 = connect({ hostname: 地址, port: 端口 });
-      测试连接.opened;
-      测试连接.close();
-    } catch (error) {
-      SOCKS5有效 = false;
-    }
-  } else {
-    SOCKS5有效 = false;
-  }
-
-  if (反代IP) {
-    try {
-      const [反代IP地址, 反代IP端口] = 反代IP.split(":");
-      const 测试连接 = connect({ hostname: 反代IP地址, port: Number(反代IP端口) || 443 });
-      测试连接.opened;
-      测试连接.close();
-    } catch (error) {
-      反代IP有效 = false;
-    }
-  } else {
-    反代IP有效 = false;
-  }
-
-  return { SOCKS5有效, 反代IP有效 };
-}
-
 function 生成项目介绍页面() {
-  return new Response(
-    `
+  const 项目介绍 = `
 <title>项目介绍</title>
 <style>
-body {
-  font-size: 25px;
-}
+  body {
+    font-size: 25px;
+  }
 </style>
 <pre>
 <strong>edge-tunnel</strong>
 
-这是一种基于CF Pages的免费代理方案
+这是一个基于CF平台的脚本,
+用途仅仅是作为代理用于隐藏真实IP, 并非作为绕过防火墙的工具
 <a href="https://github.com/ImLTHQ/edge-tunnel" target="_blank">点我跳转仓库</a>
 </pre>
-    `,
-    {
-      status: 200,
-      headers: { "Content-Type": "text/html;charset=utf-8" },
-    }
-  );
+`;
+
+  return new Response(项目介绍, {
+    status: 200,
+    headers: { "Content-Type": "text/html;charset=utf-8" },
+  });
 }
 
 // 订阅页面
-function 提示界面() {
-  return `请把链接导入clash或v2ray`;
+function 生成提示界面() {
+  const 提示界面 = `
+<title>订阅-${订阅路径}</title>
+<style>
+  body {
+    font-size: 25px;
+  }
+</style>
+<strong>请把链接导入clash或v2ray</strong>
+`;
+  return new Response(提示界面, {
+    status: 200,
+    headers: { "Content-Type": "text/html;charset=utf-8" },
+  });
 }
 
 function 处理优选列表(优选列表, hostName) {
@@ -396,12 +368,18 @@ function 处理优选列表(优选列表, hostName) {
 }
 
 function v2ray配置文件(hostName) {
+  const path = encodeURIComponent("/?ed=2560");
   const 节点列表 = 处理优选列表(优选列表, hostName);
-  return 节点列表
+  const 配置内容 = 节点列表
     .map(({ 地址, 端口, 节点名字 }) => {
-      return `vless://${我的UUID}@${地址}:${端口}?encryption=none&security=tls&sni=${hostName}&fp=chrome&type=ws&host=${hostName}&path=%2F%3Fed%3D2560#${节点名字}`;
+      return `vless://${我的UUID}@${地址}:${端口}?encryption=none&security=tls&sni=${hostName}&fp=chrome&type=ws&host=${hostName}&path=${path}#${节点名字}`;
     })
     .join("\n");
+
+  return new Response(配置内容, {
+    status: 200,
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+  });
 }
 
 function clash配置文件(hostName) {
@@ -434,7 +412,7 @@ function clash配置文件(hostName) {
     .map((node) => node.proxyConfig)
     .join("\n");
 
-  return `
+  const 配置内容 = `
 proxies:
 ${节点配置}
 
@@ -444,22 +422,6 @@ proxy-groups:
   proxies:
     - ♻️ 延迟优选
 ${代理配置}
-- name: 🎯 CN直连
-  type: select
-  proxies:
-    - DIRECT
-    - 🚀 节点选择
-- name: 🎯 CF规则
-  type: select
-  proxies:
-    - 🚀 节点选择
-    - DIRECT
-- name: 🛑 广告拦截
-  type: select
-  proxies:
-    - REJECT
-    - DIRECT
-    - 🚀 节点选择
 - name: ♻️ 延迟优选
   type: url-test
   url: https://www.google.com/generate_204
@@ -472,24 +434,141 @@ rule-providers:
   reject-domain:
     type: http
     behavior: domain
-    url: "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/ClashRuleSet/reject-domain.list"
+    url: "https://raw.githubusercontent.com/ImLTHQ/SpotifyAdBlock/master/reject-domain.list"
     path: ./ruleset/reject-domain.yaml
     interval: 86400
 
   reject-ip:
     type: http
     behavior: ipcidr
-    url: "https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/ClashRuleSet/reject-ip.list"
+    url: "https://raw.githubusercontent.com/ImLTHQ/SpotifyAdBlock/master/reject-ip.list"
     path: ./ruleset/reject-ip.yaml
     interval: 86400
 
 rules:
   - GEOIP,LAN,DIRECT
-  - GEOIP,CN,🎯 CN直连
-  - GEOSITE,CN,🎯 CN直连
-  - GEOIP,CLOUDFLARE,🎯 CF规则
-  - RULE-SET,reject-domain,🛑 广告拦截
-  - RULE-SET,reject-ip,🛑 广告拦截
+  - GEOIP,CN,DIRECT
+  - RULE-SET,reject-domain,REJECT
+  - RULE-SET,reject-ip,REJECT
   - MATCH,🚀 节点选择
 `;
+
+  return new Response(配置内容, {
+    status: 200,
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+  });
+}
+
+function singbox配置文件(hostName) {
+  const 节点列表 = 处理优选列表(优选列表, hostName);
+
+  const 生成节点 = (节点列表) => {
+      return 节点列表.map(({ 地址, 端口, 节点名字 }) => {
+          return {
+              nodeConfig: `
+  {
+    "type": "vless",
+    "tag": "${节点名字}",
+    "server": "${地址}",
+    "server_port": ${端口},
+    "uuid": "${我的UUID}",
+    "transport": {
+      "path": "/?ed=2560",
+      "type": "ws",
+      "headers": {
+        "Host": "${hostName}"
+      }
+    },
+    "tls": {
+      "enabled": true,
+      "server_name": "${hostName}",
+      "insecure": true
+    },
+    "tcp_fast_open": false
+  }`,
+              proxyConfig: `"${节点名字}"`,
+          };
+      });
+  };
+
+  const 节点配置 = 生成节点(节点列表)
+      .map((node) => node.nodeConfig)
+      .join(",\n");
+  const 代理配置 = 生成节点(节点列表)
+      .map((node) => node.proxyConfig)
+      .join(",\n");
+
+  const 配置内容 = `{
+"log": {
+  "level": "info",
+},
+"inbounds": [
+  {
+    "type": "mixed",
+    "tag": "mixed-in",
+    "listen": "0.0.0.0",
+    "listen_port": 2080
+  },
+  {
+    "type": "tun",
+    "tag": "tun-in",
+    "inet4_address": "172.19.0.1/30",
+    "auto_route": true,
+    "strict_route": true,
+    "stack": "mixed",
+    "sniff": true
+  }
+],
+"outbounds": [
+  {
+    "type": "direct",
+    "tag": "DIRECT"
+  },
+  {
+    "type": "block",
+    "tag": "REJECT"
+  },${节点配置},
+  {
+    "type": "selector",
+    "tag": "🚀 节点选择",
+    "outbounds": [
+      "♻️ 延迟优选",
+      ${代理配置}
+    ]
+  },
+  {
+    "type": "urltest",
+    "tag": "♻️ 延迟优选",
+    "outbounds": [
+      ${代理配置}
+    ],
+    "url": "http://www.gstatic.com/generate_204",
+    "interval": "5m",
+    "tolerance": 50
+  },
+  {
+    "type": "selector",
+    "tag": "GLOBAL",
+    "outbounds": [
+      "DIRECT",
+      ${代理配置}
+    ]
+  }
+],
+"route": {
+  "rules": [
+    {
+      "outbound": "🚀 节点选择"
+    }
+  ],
+  "auto_detect_interface": true,
+  "final": "🚀 节点选择"
+},
+"experimental": {}
+}`;
+
+  return new Response(配置内容, {
+      status: 200,
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+  });
 }

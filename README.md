@@ -1,8 +1,6 @@
 # edge-tunnel
 
-这是一个基于CF Pages平台的JavaScript,在天书的基础上进行优化
-
-新增自用spotify广告屏蔽规则集 (Clash)
+这是一个基于CF 平台的脚本
 
 本人是初学者, 代码有问题欢迎指出
 
@@ -80,23 +78,20 @@ Pages绑定自定义域名
 
 - `https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/HKG.txt` 香港
 - `https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/KHH.txt` 台湾
+- `https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/SIN.txt` 新加坡
 - `https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/NRT.txt` 东京
-- `https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/LAX.txt` 洛杉矶
 - `https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/SEA.txt` 西雅图
-- `https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/SJC.txt` 圣何塞
+- `https://raw.githubusercontent.com/ImLTHQ/edge-tunnel/main/SpeedTest/LHR.txt` 伦敦
 </details>
 
 # 已适配客户端
 
 - v2ray
 - clash
-- hiddify
-- streisand(需要手动填写配置)
 
 # 未来计划
 
 - 支持sing-box
-- 支持streisand订阅
 
 # 免责声明
 
@@ -104,7 +99,9 @@ Pages绑定自定义域名
 
 <strong>用途</strong>
 
-- 本项目仅供教育、研究和安全测试目的而设计和开发。旨在为安全研究人员、学术界人士及技术爱好者提供一个探索和实践网络通信技术的工具。
+- 本项目仅供教育、研究和安全测试目的而设计和开发
+- 旨在为安全研究人员、学术界人士及技术爱好者提供一个探索和实践网络通信技术的工具
+- 用途仅仅是作为代理用于隐藏真实IP, 并非作为绕过防火墙的工具
 
 <strong>合法性</strong>
 
