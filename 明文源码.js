@@ -15,7 +15,7 @@ let 优选TXT = [
 ];
 let 优选列表 = [];
 
-let 反代IP = "ts.hpc.tw:443";
+let 反代IP = "ts.hpc.tw";
 
 let 启用SOCKS5全局反代 = false;
 let SOCKS5账号 = "";
@@ -64,9 +64,7 @@ export default {
           const 配置生成器 = {
             v2ray: v2ray配置文件,
             clash: clash配置文件,
-            "sing-box": singbox配置文件,
             default: 生成提示界面,
-            //default: 生成提示界面,
           };
           const 工具 = Object.keys(配置生成器).find((工具) => 用户代理.includes(工具));
           const 生成配置 = 配置生成器[工具 || "default"];
@@ -368,7 +366,7 @@ function 处理优选列表(优选列表, hostName) {
 }
 
 function v2ray配置文件(hostName) {
-  const path = encodeURIComponent("/?ed=2560");
+  const path = encodeURIComponent("/?ed=9999");
   const 节点列表 = 处理优选列表(优选列表, hostName);
   const 配置内容 = 节点列表
     .map(({ 地址, 端口, 节点名字 }) => {
@@ -396,7 +394,7 @@ function clash配置文件(hostName) {
   sni: ${hostName}
   network: ws
   ws-opts:
-    path: "/?ed=2560"
+    path: "/?ed=9999"
     headers:
       Host: ${hostName}
       User-Agent: Chrome`,
@@ -413,6 +411,15 @@ function clash配置文件(hostName) {
     .join("\n");
 
   const 配置内容 = `
+dns:
+  enable: true
+  nameserver:
+    - 94.140.14.14
+    - 2a10:50c0::ad1:ff
+  fallback:
+    - 94.140.15.15
+    - 2a10:50c0::ad2:ff
+
 proxies:
 ${节点配置}
 
@@ -430,145 +437,12 @@ ${代理配置}
   proxies:
 ${代理配置}
 
-rule-providers:
-  reject-domain:
-    type: http
-    behavior: domain
-    url: "https://raw.githubusercontent.com/ImLTHQ/SpotifyAdBlock/master/reject-domain.list"
-    path: ./ruleset/reject-domain.yaml
-    interval: 86400
-
-  reject-ip:
-    type: http
-    behavior: ipcidr
-    url: "https://raw.githubusercontent.com/ImLTHQ/SpotifyAdBlock/master/reject-ip.list"
-    path: ./ruleset/reject-ip.yaml
-    interval: 86400
-
 rules:
-  - GEOIP,LAN,DIRECT
-  - GEOIP,CN,DIRECT
-  - RULE-SET,reject-domain,REJECT
-  - RULE-SET,reject-ip,REJECT
   - MATCH,🚀 节点选择
 `;
 
   return new Response(配置内容, {
     status: 200,
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-  });
-}
-
-function singbox配置文件(hostName) {
-  const 节点列表 = 处理优选列表(优选列表, hostName);
-
-  const 生成节点 = (节点列表) => {
-      return 节点列表.map(({ 地址, 端口, 节点名字 }) => {
-          return {
-              nodeConfig: `
-  {
-    "type": "vless",
-    "tag": "${节点名字}",
-    "server": "${地址}",
-    "server_port": ${端口},
-    "uuid": "${我的UUID}",
-    "transport": {
-      "path": "/?ed=2560",
-      "type": "ws",
-      "headers": {
-        "Host": "${hostName}"
-      }
-    },
-    "tls": {
-      "enabled": true,
-      "server_name": "${hostName}",
-      "insecure": true
-    },
-    "tcp_fast_open": false
-  }`,
-              proxyConfig: `"${节点名字}"`,
-          };
-      });
-  };
-
-  const 节点配置 = 生成节点(节点列表)
-      .map((node) => node.nodeConfig)
-      .join(",\n");
-  const 代理配置 = 生成节点(节点列表)
-      .map((node) => node.proxyConfig)
-      .join(",\n");
-
-  const 配置内容 = `{
-"log": {
-  "level": "info",
-},
-"inbounds": [
-  {
-    "type": "mixed",
-    "tag": "mixed-in",
-    "listen": "0.0.0.0",
-    "listen_port": 2080
-  },
-  {
-    "type": "tun",
-    "tag": "tun-in",
-    "inet4_address": "172.19.0.1/30",
-    "auto_route": true,
-    "strict_route": true,
-    "stack": "mixed",
-    "sniff": true
-  }
-],
-"outbounds": [
-  {
-    "type": "direct",
-    "tag": "DIRECT"
-  },
-  {
-    "type": "block",
-    "tag": "REJECT"
-  },${节点配置},
-  {
-    "type": "selector",
-    "tag": "🚀 节点选择",
-    "outbounds": [
-      "♻️ 延迟优选",
-      ${代理配置}
-    ]
-  },
-  {
-    "type": "urltest",
-    "tag": "♻️ 延迟优选",
-    "outbounds": [
-      ${代理配置}
-    ],
-    "url": "http://www.gstatic.com/generate_204",
-    "interval": "5m",
-    "tolerance": 50
-  },
-  {
-    "type": "selector",
-    "tag": "GLOBAL",
-    "outbounds": [
-      "DIRECT",
-      ${代理配置}
-    ]
-  }
-],
-"route": {
-  "rules": [
-    {
-      "outbound": "🚀 节点选择"
-    }
-  ],
-  "auto_detect_interface": true,
-  "final": "🚀 节点选择"
-},
-"experimental": {}
-}`;
-
-  return new Response(配置内容, {
-      status: 200,
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
   });
 }
