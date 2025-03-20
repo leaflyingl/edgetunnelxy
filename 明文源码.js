@@ -390,6 +390,7 @@ function clash配置文件(hostName) {
   server: ${地址}
   port: ${端口}
   uuid: ${我的UUID}
+  udp: true
   tls: true
   sni: ${hostName}
   network: ws
@@ -415,10 +416,8 @@ dns:
   enable: true
   nameserver:
     - 94.140.14.14
-    - 2a10:50c0::ad1:ff
   fallback:
     - 94.140.15.15
-    - 2a10:50c0::ad2:ff
 
 proxies:
 ${节点配置}
@@ -437,7 +436,24 @@ ${代理配置}
   proxies:
 ${代理配置}
 
+rule-providers:
+  domain:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ImLTHQ/SpotifyAdBlock/master/clash-rule-set/domain.list"
+    path: ./ruleset/domain.yaml
+    interval: 86400
+
+  ip:
+    type: http
+    behavior: ipcidr
+    url: "https://raw.githubusercontent.com/ImLTHQ/SpotifyAdBlock/master/clash-rule-set/ip.list"
+    path: ./ruleset/ip.yaml
+    interval: 86400
+
 rules:
+  - RULE-SET,ip,REJECT,no-resolve
+  - RULE-SET,domain,REJECT
   - MATCH,🚀 节点选择
 `;
 
